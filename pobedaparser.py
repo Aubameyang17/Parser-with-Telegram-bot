@@ -2,10 +2,11 @@ import asyncio
 
 from selenium import webdriver
 from selenium.webdriver.common.by import By
-import time
+from selenium.webdriver.support import expected_conditions as EC
+from selenium.webdriver.support.ui import WebDriverWait
 import datetime
 import traceback
-from sql_file import info_to_table, take_orders
+from sql_file import info_to_table
 
 year = datetime.date.today().year
 month = datetime.date.today().month
@@ -20,10 +21,11 @@ async def pobeda(resultfrom, resultto, usermonth, userdate, cursor, conn, name):
     try:
         url = f"https://ticket.flypobeda.ru/websky/?origin-city-code%5B0%5D={resultfrom}&destination-city-code%5B0%5D={resultto}&date%5B0%5D={userdate}.{month_to_number[usermonth]}.{year}&segmentsCount=1&adultsCount=1&youngAdultsCount=0&childrenCount=0&infantsWithSeatCount=0&infantsWithoutSeatCount=0&lang=ru#/search"
         driverpobeda.get(url)
+        wait = WebDriverWait(driverpobeda, 20)
         driverpobeda.delete_all_cookies()
         driverpobeda.refresh()
-        await asyncio.sleep(10)
-        table = driverpobeda.find_element(By.CLASS_NAME, "flightTable")
+        table = wait.until(EC.presence_of_element_located((By.CLASS_NAME, "flightTable")))
+        #table = driverpobeda.find_element(By.CLASS_NAME, "flightTable")
         content = table.find_elements(By.CLASS_NAME, "contentRow")
         for el in content:
             peresadka = el.find_element(By.CLASS_NAME, "popup_js")

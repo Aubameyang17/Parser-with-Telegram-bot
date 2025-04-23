@@ -4,6 +4,8 @@ import logging
 from config import token
 from aiogram import Bot, Dispatcher, types, F
 from aiogram.filters import Command
+import os
+from dotenv import load_dotenv
 
 from handlers.callback import register_callbacks
 from handlers.message import register_message

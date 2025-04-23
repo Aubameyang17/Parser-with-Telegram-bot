@@ -62,7 +62,6 @@ async def osnovnoe(resultfrom, resultto, usermonth, userdate, cursor, conn, name
                     leftind = mass.index("flight-search__left")
                     leftsit = ko[leftind].text
                 except Exception as ex:
-                    print("leftind")
                     #traceback.print_exc()
                     leftsit = ""
 
@@ -70,7 +69,6 @@ async def osnovnoe(resultfrom, resultto, usermonth, userdate, cursor, conn, name
                     terminalen = tdfrom.find_element(By.CLASS_NAME, 'time-destination__terminal')
                     terminal = "Терминал - " + terminalen.text
                 except Exception as ex:
-                    print("terminal")
                     #traceback.print_exc()
                     terminal = ""
 
@@ -86,7 +84,6 @@ async def osnovnoe(resultfrom, resultto, usermonth, userdate, cursor, conn, name
                     toterminal = "Терминал - " + toterminalen.text
                 except Exception as ex:
                     #traceback.print_exc()
-                    print("toterminal")
                     toterminal = ""
 
                 try:
@@ -94,17 +91,15 @@ async def osnovnoe(resultfrom, resultto, usermonth, userdate, cursor, conn, name
                     plusday = plusday.text
                 except Exception as ex:
                     #traceback.print_exc()
-                    print("plusday")
                     plusday = ""
                 info_to_table(name, time_from, airfrom, terminal, timeto, plusday, airto, toterminal, compname, price, leftsit, cursor, conn)
             except Exception as ex:
-                print("row fligtht first")
+                continue
                 #traceback.print_exc()
 
 
     except Exception as ex:
         traceback.print_exc()
-        print("osnovnoe")
         print("Рейсы не найдены")
 
     finally:

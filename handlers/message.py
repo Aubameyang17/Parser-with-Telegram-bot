@@ -58,6 +58,7 @@ async def air_to_handler(message: types.Message, state: FSMContext):
         await message.answer("Такого города не существует, попробуйте еще раз")
         return
     await state.update_data(air_from=resultfrom)
+    await state.update_data(city_from=message.text)
     await message.answer("Введите город в который хотите полететь")
     await state.set_state(User.air_to.state)
 
@@ -77,6 +78,7 @@ async def month_handler(message: types.Message, state: FSMContext):
         await message.answer("Такого города не существует, попробуйте еще раз")
         return
     await state.update_data(air_to=resultto)
+    await state.update_data(city_to=message.text)
     await state.set_state(User.month.state)
     await message.answer("Выберите месяц для перелета")
 
@@ -115,10 +117,13 @@ async def vivod_handler(message: types.Message, state: FSMContext):
     else:
         await message.answer("Такой даты нет в выбраном месяце")
         return
-    await message.answer(f"Откуда {user_data['air_from']} куда {user_data['air_to']} месяц {user_data['month']} день {userdate}")
+    await message.answer(f"Отлично, сейчас посмотрим какие есть предложения по билетам из {user_data['city_from']} в "
+                         f"{user_data['city_to']} {userdate} {user_data['month']}")
     name = create_table(str(message.from_user.id), cursor, conn)
-    osnova = asyncio.create_task(osnovnoe(user_data['air_from'], user_data['air_to'], user_data['month'], userdate, cursor, conn, name))
-    pobedna = asyncio.create_task(pobeda(user_data['air_from'], user_data['air_to'], user_data['month'], userdate, cursor, conn, name))
+    osnova = asyncio.create_task(osnovnoe(user_data['air_from'], user_data['air_to'],
+                                          user_data['month'], userdate, cursor, conn, name))
+    pobedna = asyncio.create_task(pobeda(user_data['air_from'], user_data['air_to'],
+                                         user_data['month'], userdate, cursor, conn, name))
     await osnova
     await pobedna
     userid = message.from_user.id
@@ -148,13 +153,16 @@ async def vivod_handler(message: types.Message, state: FSMContext):
             city_to = city_to[0]
             toterminal = el[7]
             compname = el[8]
-            price = el[9]
+            price = str(el[9])
             leftsit = el[10]
-            podstroka = f"*{compname}*\n{city_from}({airfrom}) - {city_to}({airto}) \n <b>Вылет</b> {userdate} {user_data['month']} | {time_from} - {timeto} {plusday}\n<i>Цена:</i> *{price}*\n{leftsit}"
-            #podstroka = f"<b>Вылет</b> в {time_from} из г.{city_from}({airfrom}) {terminal}\nПрилет в {timeto} {plusday} в г.{city_to}({airto}) {toterminal}\n{compname} от {price} {leftsit}\n\n"
+            podstroka = f"🛩:small_airplane: _\*{compname}\*_\n" \
+                        f"__{city_from}__ \({airfrom}\) \- __{city_to}__ \({airto}\) \n:calendar: __Вылет__ {userdate} " \
+                        f"{user_data['month']} \| :alarm_clock: {time_from} \- {timeto} {plusday}\n" \
+                        f":moneybag: Цена: _\*{price}\*_\n:seat: {leftsit}\n\n"
             stroka += podstroka
             count += 1
-        await message.answer(stroka, parse_mode=ParseMode.HTML)
+        await message.answer(stroka, parse_mode=ParseMode.MARKDOWN_V2)
+        await message.answer("Great Job :smile:", parse_mode=ParseMode.MARKDOWN_V2)
     else:
         await message.answer("Рейсы не найдены, попробуйте другие даты\n"
                              "Также в боте могла произойти ошибка, попробуйте написать свой запрос еще раз")
