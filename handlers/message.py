@@ -1,6 +1,7 @@
 import traceback
 
 from aiogram import Bot, Dispatcher, types, F
+from aiogram.enums import ParseMode
 from aiogram.filters import CommandStart, Command
 import asyncio
 import datetime
@@ -149,10 +150,11 @@ async def vivod_handler(message: types.Message, state: FSMContext):
             compname = el[8]
             price = el[9]
             leftsit = el[10]
-            podstroka = f"Вылет в {time_from} из г.{city_from}({airfrom}) {terminal}\nПрилет в {timeto} {plusday} в г.{city_to}({airto}) {toterminal}\n{compname} от {price} {leftsit}\n\n"
+            podstroka = f"*{compname}*\n{city_from}({airfrom}) - {city_to}({airto}) \n <b>Вылет</b> {userdate} {user_data['month']} | {time_from} - {timeto} {plusday}\n<i>Цена:</i> *{price}*\n{leftsit}"
+            #podstroka = f"<b>Вылет</b> в {time_from} из г.{city_from}({airfrom}) {terminal}\nПрилет в {timeto} {plusday} в г.{city_to}({airto}) {toterminal}\n{compname} от {price} {leftsit}\n\n"
             stroka += podstroka
             count += 1
-        await message.answer(stroka)
+        await message.answer(stroka, parse_mode=ParseMode.HTML)
     else:
         await message.answer("Рейсы не найдены, попробуйте другие даты\n"
                              "Также в боте могла произойти ошибка, попробуйте написать свой запрос еще раз")
