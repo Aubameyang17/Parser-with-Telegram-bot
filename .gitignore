@@ -1,2 +1,14 @@
 __pycache__/ 
 venv/config.py 
+# Byte-compiled / optimized / DLL files
+*.py[cod]
+*.pyo
+
+# Virtual environments
+env/
+venv/
+.env/
+
+# IDE
+.vscode/
+.idea/
