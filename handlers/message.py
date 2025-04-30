@@ -10,6 +10,7 @@ from aiogram.fsm.context import FSMContext
 from pobedaparser import pobeda
 from aeroflot_Parser import osnovnoe
 from UrAirparser import uralair
+from smartaviaparser import smartavia
 from keyboards.keyboards import user_menu
 from sql_file import create_table, take_orders
 from states.state import User
@@ -29,7 +30,8 @@ async def run_all_parsers_parallel(resultfrom, resultto, usermonth, userdate, cu
     results = await asyncio.gather(
         osnovnoe(resultfrom, resultto, usermonth, userdate, cursor, conn, name, year),
         pobeda(resultfrom, resultto, usermonth, userdate, cursor, conn, name, year),
-        uralair(resultfrom, resultto, usermonth, userdate, cursor, conn, name, year)
+        uralair(resultfrom, resultto, usermonth, userdate, cursor, conn, name, year),
+        smartavia(resultfrom, resultto, usermonth, userdate, cursor, conn, name, year)
     )
     return results
 
@@ -171,9 +173,11 @@ async def show_page(message: types.Message, flights, page, user_data):
 
     cursor.execute("SELECT city FROM aero WHERE code LIKE %s", (f"%{airfrom}%",))
     city_from = cursor.fetchone()[0]
+    city_from = city_from.replace('-', '\-')
 
     cursor.execute("SELECT city FROM aero WHERE code LIKE %s", (f"%{airto}%",))
     city_to = cursor.fetchone()[0]
+    city_to = city_to.replace('-', '\-')
     text += (f"Cтраница {page + 1}/{total_flights}\n"
              f"✈ \**{compname}*\*\n" \
                 f"_{city_from}_ \({airfrom}\) \- _{city_to}_ \({airto}\) \n📅 __Вылет__: {user_data['day']} " \
@@ -206,16 +210,11 @@ async def repeat_order(message: types.Message, state: FSMContext):
     if airfrom_table:
         await message.answer(f"Хорошо, давай вновь посмотрим какие есть предложения по билетам из {airfrom_table} в "
                              f"{airto_table} {day_table} {month_table} {newyear} 🕒")
-        name = create_table(str(message.from_user.id), cursor, conn)
-        osnova = asyncio.create_task(osnovnoe(airfrom_table, airto_table,
-                                              month_table, day_table, cursor, conn, name, newyear))
-        pobedna = asyncio.create_task(pobeda(airfrom_table, airto_table,
-                                              month_table, day_table, cursor, conn, name, newyear))
-
-        await osnova
-        await pobedna
+        create_table(str(message.from_user.id), cursor, conn)
         userid = message.from_user.id
         name = '"' + str(userid) + "flyghts" + '"'
+        resultt = await run_all_parsers_parallel(airfrom_table, airto_table,
+                                                 month_table, day_table, cursor, conn, name, newyear)
         cursor.execute('SELECT * FROM ' + name + ' ORDER BY price asc')
         result = cursor.fetchall()
         if result:

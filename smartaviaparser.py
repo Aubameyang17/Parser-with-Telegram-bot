@@ -1,27 +1,30 @@
-import time
 import traceback
 from selenium import webdriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.ui import WebDriverWait
 
-options_chrome = webdriver.ChromeOptions()
-# options.add_argument("--headless")
-options_chrome.add_argument("--disable-blink-features=AutomationControlled")
+from sql_file import info_to_table
 
-driver = webdriver.Chrome(options=options_chrome)
+month_to_number = {'январь': "01", 'февраль': "02", 'март': "03", 'апрель': "04", 'май': "05", 'июнь': "06",
+                   'июль': "07", 'август': "08", 'сентябрь': "09", 'октябрь': "10", 'ноябрь': "11", 'декабрь': "12"}
 
-driver.execute_cdp_cmd("Page.addScriptToEvaluateOnNewDocument", {
-    'source': '''
-        delete window.cdc_adoQpoasnfa76pfcZLmcfl_Array;
-        delete window.cdc_adoQpoasnfa76pfcZLmcfl_Promise;
-        delete window.cdc_adoQpoasnfa76pfcZLmcfl_Symbol;
-  '''
-})
+async def smartavia(resultfrom, resultto, usermonth, userdate, cursor, conn, name, year):
+    options_chrome = webdriver.ChromeOptions()
+    options_chrome.add_argument("--headless")
+    options_chrome.add_argument('--no-sandbox')
+    options_chrome.add_argument("--disable-blink-features=AutomationControlled")
+    driver = webdriver.Chrome(options=options_chrome)
 
-def smartavia(resultfrom, resultto, usermonth, userdate, cursor, conn, name, year):
+    driver.execute_cdp_cmd("Page.addScriptToEvaluateOnNewDocument", {
+        'source': '''
+            delete window.cdc_adoQpoasnfa76pfcZLmcfl_Array;
+            delete window.cdc_adoQpoasnfa76pfcZLmcfl_Promise;
+            delete window.cdc_adoQpoasnfa76pfcZLmcfl_Symbol;
+      '''
+    })
     try:
-        url = f"https://flysmartavia.com/search/{resultfrom}-{userdate}{usermonth}-{resultto}-1"
+        url = f"https://flysmartavia.com/search/{resultfrom}-{userdate}{month_to_number[usermonth]}-{resultto}-1"
         driver.get(url)
         wait = WebDriverWait(driver, 20)
         driver.delete_all_cookies()
@@ -46,18 +49,18 @@ def smartavia(resultfrom, resultto, usermonth, userdate, cursor, conn, name, yea
             time_to = fin[1].find_element(By.CLASS_NAME, 'time').text
             # print(time_from + " - " + time_to + plusday)
             air_to = tin[1].text
-            pricemass = el.find_element(By.CLASS_NAME, '.price.nowrap').text
-            pricemass.split().pop()
-            price = int(pricemass)
-            print(price)
-            terminal = ""
-            compname = "Победа"
-            leftsit = ""
-            """print(f"Вылет в {time_from} из {city_from} {terminal}")
-            print(f"Прилет в {time_to} {plusday} в {city_to} {terminal}")
-            print(f"{compname} от {price} {leftsit}\n")"""
-            #info_to_table(name, time_from, city_from, terminal, time_to, plusday, city_to, terminal, compname, price,
-                              #leftsit, cursor, conn)
+            if air_to != resultto:
+                pass
+            else:
+                pricemass = el.find_element(By.CSS_SELECTOR, '.price.nowrap').text
+                price = pricemass.split()
+                price.pop()
+                price = int("".join(price))
+                terminal = ""
+                compname = "Smartavia"
+                leftsit = ""
+                plusday = ''
+                info_to_table(name, time_from, air_from, time_to, plusday, air_to, compname, price, leftsit, cursor, conn)
 
 
     except Exception as ex:
@@ -66,7 +69,3 @@ def smartavia(resultfrom, resultto, usermonth, userdate, cursor, conn, name, yea
 
     finally:
         driver.quit()  # Закрываем браузер
-
-resultfrom, resultto, usermonth, userdate, cursor, conn, name, year = 'LED', 'SVX', '05', '25', '', '', '', ''
-
-smartavia(resultfrom, resultto, usermonth, userdate, cursor, conn, name, year)

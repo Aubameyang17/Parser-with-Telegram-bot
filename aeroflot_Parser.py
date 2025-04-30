@@ -18,6 +18,8 @@ month_to_number = {'январь': "01", 'февраль': "02", 'март': "03
 
 async def osnovnoe(resultfrom, resultto, usermonth, userdate, cursor, conn, name, year):
     options_chrome = webdriver.ChromeOptions()
+    #options_chrome.add_argument("--headless")
+    #options_chrome.add_argument('--no-sandbox')
     driver = webdriver.Chrome(options=options_chrome)
 
     try:
@@ -26,14 +28,17 @@ async def osnovnoe(resultfrom, resultto, usermonth, userdate, cursor, conn, name
         driver.get(url)
         driver.delete_all_cookies()
         driver.refresh()
-        await asyncio.sleep(10)
-        elmtsint = driver.find_elements(By.TAG_NAME, "a")
-
+        wait = WebDriverWait(driver, 20)
+        wait.until(EC.element_to_be_clickable((By.XPATH, '//a[text()="Найти"]'))).click()
+        """elmtsint = driver.find_elements(By.TAG_NAME, "a")
+        print('elmsint')
         for el in elmtsint:
+            print('el')
             if el.text == "Найти":
-                el.click()
+                print('naiti')
+                el.click()"""
 
-        await asyncio.sleep(10)
+        wait.until(EC.presence_of_element_located((By.CLASS_NAME, "flight-search")))
         polet = driver.find_elements(By.CLASS_NAME, "flight-search")
 
         for one in polet:
