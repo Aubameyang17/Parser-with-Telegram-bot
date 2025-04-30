@@ -15,8 +15,8 @@ month_to_number = {'январь': "01", 'февраль': "02", 'март': "03
 
 async def pobeda(resultfrom, resultto, usermonth, userdate, cursor, conn, name, year):
     options_chrome = webdriver.ChromeOptions()
-    options_chrome.add_argument("--headless")
-    options_chrome.add_argument('--no-sandbox')
+    #options_chrome.add_argument("--headless")
+    #options_chrome.add_argument('--no-sandbox')
     driverpobeda = webdriver.Chrome(options=options_chrome)
 
     try:

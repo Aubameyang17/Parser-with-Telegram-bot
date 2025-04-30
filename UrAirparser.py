@@ -38,8 +38,8 @@ def generate_ural_url(departure_code: str, arrival_code: str, departure_date: da
 
 async def uralair(resultfrom, resultto, usermonth, userdate, cursor, conn, name, year):
     options_chrome = webdriver.ChromeOptions()
-    options_chrome.add_argument("--headless")
-    options_chrome.add_argument('--no-sandbox')
+    #options_chrome.add_argument("--headless")
+    #options_chrome.add_argument('--no-sandbox')
     options_chrome.add_argument("--disable-blink-features=AutomationControlled")
     driver = webdriver.Chrome(options=options_chrome)
 

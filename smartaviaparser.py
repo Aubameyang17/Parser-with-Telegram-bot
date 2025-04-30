@@ -11,8 +11,8 @@ month_to_number = {'январь': "01", 'февраль': "02", 'март': "03
 
 async def smartavia(resultfrom, resultto, usermonth, userdate, cursor, conn, name, year):
     options_chrome = webdriver.ChromeOptions()
-    options_chrome.add_argument("--headless")
-    options_chrome.add_argument('--no-sandbox')
+    #options_chrome.add_argument("--headless")
+    #options_chrome.add_argument('--no-sandbox')
     options_chrome.add_argument("--disable-blink-features=AutomationControlled")
     driver = webdriver.Chrome(options=options_chrome)
 
