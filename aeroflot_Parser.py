@@ -4,18 +4,19 @@ import psycopg2
 import datetime
 import traceback
 from selenium import webdriver
+from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.common.by import By
+from selenium.webdriver.support.ui import WebDriverWait
 
 from sql_file import create_table, info_to_table, take_orders
 
-year = datetime.date.today().year
 month = datetime.date.today().month
 
 month_to_number = {'январь': "01", 'февраль': "02", 'март': "03", 'апрель': "04", 'май': "05", 'июнь': "06",
                    'июль': "07", 'август': "08", 'сентябрь': "09", 'октябрь': "10", 'ноябрь': "11", 'декабрь': "12"}
 
 
-async def osnovnoe(resultfrom, resultto, usermonth, userdate, cursor, conn, name):
+async def osnovnoe(resultfrom, resultto, usermonth, userdate, cursor, conn, name, year):
     options_chrome = webdriver.ChromeOptions()
     driver = webdriver.Chrome(options=options_chrome)
 
@@ -65,13 +66,6 @@ async def osnovnoe(resultfrom, resultto, usermonth, userdate, cursor, conn, name
                     #traceback.print_exc()
                     leftsit = ""
 
-                try:
-                    terminalen = tdfrom.find_element(By.CLASS_NAME, 'time-destination__terminal')
-                    terminal = "Терминал - " + terminalen.text
-                except Exception as ex:
-                    #traceback.print_exc()
-                    terminal = ""
-
                 tdto = ko[simpind].find_element(By.CLASS_NAME, "time-destination__to")
                 timeto = tdto.find_element(By.CLASS_NAME, 'time-destination__time')
                 timemass = timeto.text.split("\n")
@@ -80,19 +74,12 @@ async def osnovnoe(resultfrom, resultto, usermonth, userdate, cursor, conn, name
                 airto = todestair.text
 
                 try:
-                    toterminalen = tdto.find_element(By.CLASS_NAME, 'time-destination__terminal')
-                    toterminal = "Терминал - " + toterminalen.text
-                except Exception as ex:
-                    #traceback.print_exc()
-                    toterminal = ""
-
-                try:
                     plusday = tdto.find_element(By.CLASS_NAME, 'time-destination__plusday')
                     plusday = plusday.text
                 except Exception as ex:
                     #traceback.print_exc()
                     plusday = ""
-                info_to_table(name, time_from, airfrom, terminal, timeto, plusday, airto, toterminal, compname, price, leftsit, cursor, conn)
+                info_to_table(name, time_from, airfrom, timeto, plusday, airto, compname, price, leftsit, cursor, conn)
             except Exception as ex:
                 continue
                 #traceback.print_exc()

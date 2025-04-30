@@ -1,5 +1,5 @@
 import traceback
-
+from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
 from aiogram import Bot, Dispatcher, types, F
 from aiogram.enums import ParseMode
 from aiogram.filters import CommandStart, Command
@@ -7,9 +7,9 @@ import asyncio
 import datetime
 import psycopg2
 from aiogram.fsm.context import FSMContext
-
 from pobedaparser import pobeda
 from aeroflot_Parser import osnovnoe
+from UrAirparser import uralair
 from keyboards.keyboards import user_menu
 from sql_file import create_table, take_orders
 from states.state import User
@@ -25,6 +25,15 @@ conn = psycopg2.connect(dbname="Aeroports", host="127.0.0.1", user="Alex", passw
 cursor = conn.cursor()
 
 
+async def run_all_parsers_parallel(resultfrom, resultto, usermonth, userdate, cursor, conn, name, year):
+    results = await asyncio.gather(
+        osnovnoe(resultfrom, resultto, usermonth, userdate, cursor, conn, name, year),
+        pobeda(resultfrom, resultto, usermonth, userdate, cursor, conn, name, year),
+        uralair(resultfrom, resultto, usermonth, userdate, cursor, conn, name, year)
+    )
+    return results
+
+
 
 async def add_user(user_id, username):
     cursor.execute(f"select * from telegramusers where user_id = {user_id};")
@@ -37,10 +46,11 @@ async def add_user(user_id, username):
 async def start_command(message: types.Message):
     await add_user(message.from_user.id, message.from_user.username)
     kb = types.ReplyKeyboardMarkup(resize_keyboard=True, keyboard=[
-        [types.KeyboardButton(text='/start'), types.KeyboardButton(text='/air')]
+        [types.KeyboardButton(text='/start'), types.KeyboardButton(text='/air'), types.KeyboardButton(text='/repeat')]
     ])
-    await message.answer(f'Добрый день, {message.from_user.full_name}\n'
-                         f'Рад вас видеть, напишите /air, чтобы начать искать билеты', reply_markup=kb)
+    await message.answer(f'Добрый день, {message.from_user.full_name} 😉\n'
+                         f'Рад вас видеть, напишите /air, чтобы начать искать билеты '
+                         f'или /repeat чтобы повторить предыдущий запрос', reply_markup=kb)
 
 async def air_from_handler(message: types.Message, state: FSMContext):
     await message.answer("Откуда полетим?")
@@ -83,11 +93,9 @@ async def month_handler(message: types.Message, state: FSMContext):
     await message.answer("Выберите месяц для перелета")
 
 async def day_handler(message: types.Message, state: FSMContext):
+    global year
     if message.text.lower() in month_to_number.keys():
-        if int(month_to_number[message.text.lower()]) < month:
-            await message.answer(
-                "Такой месяц уже прошел, если вы хотите посмотреть билеты на следующий год дождитесь обновлений бота")
-            return
+        pass
     else:
         await message.answer("Такого месяца не существует, попробуйте еще раз")
         return
@@ -98,14 +106,16 @@ async def day_handler(message: types.Message, state: FSMContext):
 
 async def vivod_handler(message: types.Message, state: FSMContext):
     user_data = await state.get_data()
+    global year
+    newyear = year
     try:
         userdate = int(message.text)
     except Exception:
-        await message.answer("Это не число")
+        await message.answer("Это не число 😔")
         return
-    if int(month_to_number[user_data['month']]) == month and userdate < day:
-        await message.answer("Этот день уже прошел, если вы хотите посмотреть билеты на следующий год дождитесь обновлений бота")
-        return
+    if int(month_to_number[user_data['month']]) == month and userdate < day or int(month_to_number[user_data['month']]) < month:
+        newyear = int(newyear) + 1
+        await message.answer("Такой даты в этом году уже нет, поэтому был выбран следующий год")
     elif user_data['month'] in chet and int(userdate) in range(1, 31):
         pass
     elif user_data['month'] in nechet and int(userdate) in range(1, 32):
@@ -115,102 +125,127 @@ async def vivod_handler(message: types.Message, state: FSMContext):
     elif user_data['month'] == 'Февраль' and int(year) % 4 != 0 and int(userdate) in range(1, 29):
         pass
     else:
-        await message.answer("Такой даты нет в выбраном месяце")
+        await message.answer("Такой даты нет в выбраном месяце 😔")
         return
+    await state.update_data(day=message.text)
+    await state.update_data(year=newyear)
+    user_data = await state.get_data()
     await message.answer(f"Отлично, сейчас посмотрим какие есть предложения по билетам из {user_data['city_from']} в "
-                         f"{user_data['city_to']} {userdate} {user_data['month']}")
-    name = create_table(str(message.from_user.id), cursor, conn)
-    osnova = asyncio.create_task(osnovnoe(user_data['air_from'], user_data['air_to'],
-                                          user_data['month'], userdate, cursor, conn, name))
-    pobedna = asyncio.create_task(pobeda(user_data['air_from'], user_data['air_to'],
-                                         user_data['month'], userdate, cursor, conn, name))
-    await osnova
-    await pobedna
+                         f"{user_data['city_to']} {userdate} {user_data['month']} {newyear}г. 🕒")
+    create_table(str(message.from_user.id), cursor, conn)
     userid = message.from_user.id
     name = '"' + str(userid) + "flyghts" + '"'
+    resultt = await run_all_parsers_parallel(user_data['air_from'], user_data['air_to'],
+                                         user_data['month'], userdate, cursor, conn, name, newyear)
     cursor.execute('SELECT * FROM ' + name + ' ORDER BY price asc')
     result = cursor.fetchall()
     if result:
-        stroka = "Вот три самых дешевых предложения, если хотите увидеть все варианты напишите /all:\n\n"
-        count = 0
-        for el in result:
-            try:
-                if count > 2:
-                    raise Exception()
-            except Exception:
-                continue
-            time_from = el[1]
-            airfrom = el[2]
-            cursor.execute(f"SELECT city FROM aero WHERE code LIKE '%{airfrom}%'")
-            city_from = cursor.fetchone()
-            city_from = city_from[0]
-            terminal = el[3]
-            timeto = el[4]
-            plusday = el[5]
-            airto = el[6]
-            cursor.execute(f"SELECT city FROM aero WHERE code LIKE '%{airto}%'")
-            city_to = cursor.fetchone()
-            city_to = city_to[0]
-            toterminal = el[7]
-            compname = el[8]
-            price = str(el[9])
-            leftsit = el[10]
-            podstroka = f"🛩:small_airplane: _\*{compname}\*_\n" \
-                        f"__{city_from}__ \({airfrom}\) \- __{city_to}__ \({airto}\) \n:calendar: __Вылет__ {userdate} " \
-                        f"{user_data['month']} \| :alarm_clock: {time_from} \- {timeto} {plusday}\n" \
-                        f":moneybag: Цена: _\*{price}\*_\n:seat: {leftsit}\n\n"
-            stroka += podstroka
-            count += 1
-        await message.answer(stroka, parse_mode=ParseMode.MARKDOWN_V2)
-        await message.answer("Great Job :smile:", parse_mode=ParseMode.MARKDOWN_V2)
+        await state.update_data(all_flights=result, page=0)
+        await show_page(message, result, 0, user_data)
     else:
-        await message.answer("Рейсы не найдены, попробуйте другие даты\n"
-                             "Также в боте могла произойти ошибка, попробуйте написать свой запрос еще раз")
-
+        await message.answer(
+            "Рейсы не найдены, попробуйте выбрать другие даты. 😔\n"
+            "Также могла произойти ошибка — попробуйте снова."
+        )
     try:
-        take_orders(name, userid, user_data['air_from'], user_data['air_to'], user_data['month'], userdate, cursor, conn)
+        take_orders(name, userid, user_data['air_from'], user_data['air_to'], user_data['month'], user_data['day'],
+                    cursor, conn)
     except Exception:
         traceback.print_exc()
         print("take orders")
 
-async def show_all_flights(message: types.Message):
-    name = '"' + str(message.from_user.id) + "flyghts" + '"'
-    cursor.execute('SELECT * FROM ' + name + ' ORDER BY price asc')
-    result = cursor.fetchall()
-    if result:
-        stroka = "Вот все предложения по вашему запросу:\n\n"
-        for el in result:
-            time_from = el[1]
-            airfrom = el[2]
-            cursor.execute(f"SELECT city FROM aero WHERE code LIKE '%{airfrom}%'")
-            city_from = cursor.fetchone()
-            city_from = city_from[0]
-            terminal = el[3]
-            timeto = el[4]
-            plusday = el[5]
-            airto = el[6]
-            cursor.execute(f"SELECT city FROM aero WHERE code LIKE '%{airto}%'")
-            city_to = cursor.fetchone()
-            city_to = city_to[0]
-            toterminal = el[7]
-            compname = el[8]
-            price = el[9]
-            leftsit = el[10]
-            podstroka = f"Вылет в {time_from} из г.{city_from}({airfrom}) {terminal}\nПрилет в {timeto} {plusday} в г.{city_to}({airto}) {toterminal}\n{compname} от {price} {leftsit}\n\n"
-            stroka += podstroka
-        await message.answer(stroka)
+
+async def show_page(message: types.Message, flights, page, user_data):
+    total_flights = len(flights)
+
+    if page < 0:
+        page = 0
+    elif page >= total_flights:
+        page = total_flights - 1
+
+    el = flights[page]
+
+    text = ""
+    time_from, airfrom, timeto, plusday, airto, compname, price, leftsit = el[1:9]
+    plusday = plusday.replace('+', '\+')
+
+    cursor.execute("SELECT city FROM aero WHERE code LIKE %s", (f"%{airfrom}%",))
+    city_from = cursor.fetchone()[0]
+
+    cursor.execute("SELECT city FROM aero WHERE code LIKE %s", (f"%{airto}%",))
+    city_to = cursor.fetchone()[0]
+    text += (f"Cтраница {page + 1}/{total_flights}\n"
+             f"✈ \**{compname}*\*\n" \
+                f"_{city_from}_ \({airfrom}\) \- _{city_to}_ \({airto}\) \n📅 __Вылет__: {user_data['day']} " \
+                f"{user_data['month']} {plusday}  \|  ⏰  {time_from} \- {timeto}\n" \
+                f"💰  Цена: _\*{price}₽\*_\n💺 {leftsit}\n\n")
+
+    # Создаем клавиатуру
+    keyboard = InlineKeyboardMarkup(inline_keyboard=[
+        [
+            InlineKeyboardButton(text="⬅️ Назад", callback_data="prev"),
+            InlineKeyboardButton(text="➡️ Вперед", callback_data="next")
+        ]
+    ])
+    await message.answer(text, reply_markup=keyboard, parse_mode=ParseMode.MARKDOWN_V2)
+
+
+async def repeat_order(message: types.Message, state: FSMContext):
+    newyear = year
+    cursor.execute(f"SELECT airfrom from orders WHERE id_user = {message.from_user.id} ORDER BY id desc")
+    airfrom_table = cursor.fetchone()[0]
+    cursor.execute(f"SELECT airto from orders WHERE id_user = {message.from_user.id} ORDER BY id desc")
+    airto_table = cursor.fetchone()[0]
+    cursor.execute(f"SELECT month from orders WHERE id_user = {message.from_user.id} ORDER BY id desc")
+    month_table = cursor.fetchone()[0]
+    cursor.execute(f"SELECT userdate from orders WHERE id_user = {message.from_user.id} ORDER BY id desc")
+    day_table = cursor.fetchone()[0]
+    if int(month_to_number[month_table]) == month and day_table < day or int(month_to_number[month_table]) < month:
+        newyear = int(newyear) + 1
+
+    if airfrom_table:
+        await message.answer(f"Хорошо, давай вновь посмотрим какие есть предложения по билетам из {airfrom_table} в "
+                             f"{airto_table} {day_table} {month_table} {newyear} 🕒")
+        name = create_table(str(message.from_user.id), cursor, conn)
+        osnova = asyncio.create_task(osnovnoe(airfrom_table, airto_table,
+                                              month_table, day_table, cursor, conn, name, newyear))
+        pobedna = asyncio.create_task(pobeda(airfrom_table, airto_table,
+                                              month_table, day_table, cursor, conn, name, newyear))
+
+        await osnova
+        await pobedna
+        userid = message.from_user.id
+        name = '"' + str(userid) + "flyghts" + '"'
+        cursor.execute('SELECT * FROM ' + name + ' ORDER BY price asc')
+        result = cursor.fetchall()
+        if result:
+            await state.update_data(air_from=airfrom_table)
+            await state.update_data(air_to=airto_table)
+            await state.update_data(month=month_table)
+            await state.update_data(day=day_table)
+            user_data = await state.get_data()
+            await state.update_data(all_flights=result, page=0)
+            await show_page(message, result, 0, user_data)
+        else:
+            await message.answer(
+                "Рейсы не найдены, попробуйте выбрать другие даты. 😔\n"
+                "Также могла произойти ошибка — попробуйте снова."
+            )
+        try:
+            take_orders(name, userid, airfrom_table, airto_table, month_table, day_table, cursor, conn)
+        except Exception:
+            traceback.print_exc()
+            print("take orders")
     else:
-        await message.answer("Рейсы не найдены, попробуйте другие даты\n"
-                             "Также в боте могла произойти ошибка, попробуйте написать свой запрос еще раз")
-
-
-
+        await message.answer("Похоже что ты еще не создавал запросы или система дала сбой и "
+                             "информация о твоих последних запросах исчезла 😔 \n"
+                             "Попробуй создать новый запрос используя команду /air")
 
 
 def register_message(dp: Dispatcher):
     dp.message.register(start_command, CommandStart())
     dp.message.register(air_from_handler, Command("air"))
-    dp.message.register(show_all_flights, Command("all"))
+    dp.message.register(repeat_order, Command("repeat"))
     dp.message.register(air_to_handler, User.air_from)
     dp.message.register(month_handler, User.air_to)
     dp.message.register(day_handler, User.month)

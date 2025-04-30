@@ -22,6 +22,8 @@ async def fun1(x):
 
 
 
+
+
 async def fun2(x):
     month = "Февраль"
     if int(month_to_number[month]) < datetime.date.today().month:

@@ -8,13 +8,12 @@ import datetime
 import traceback
 from sql_file import info_to_table
 
-year = datetime.date.today().year
 month = datetime.date.today().month
 
 month_to_number = {'январь': "01", 'февраль': "02", 'март': "03", 'апрель': "04", 'май': "05", 'июнь': "06",
                    'июль': "07", 'август': "08", 'сентябрь': "09", 'октябрь': "10", 'ноябрь': "11", 'декабрь': "12"}
 
-async def pobeda(resultfrom, resultto, usermonth, userdate, cursor, conn, name):
+async def pobeda(resultfrom, resultto, usermonth, userdate, cursor, conn, name, year):
     options_chrome = webdriver.ChromeOptions()
     driverpobeda = webdriver.Chrome(options=options_chrome)
 
@@ -25,7 +24,6 @@ async def pobeda(resultfrom, resultto, usermonth, userdate, cursor, conn, name):
         driverpobeda.delete_all_cookies()
         driverpobeda.refresh()
         table = wait.until(EC.presence_of_element_located((By.CLASS_NAME, "flightTable")))
-        #table = driverpobeda.find_element(By.CLASS_NAME, "flightTable")
         content = table.find_elements(By.CLASS_NAME, "contentRow")
         for el in content:
             peresadka = el.find_element(By.CLASS_NAME, "popup_js")
@@ -52,11 +50,10 @@ async def pobeda(resultfrom, resultto, usermonth, userdate, cursor, conn, name):
             price = price.text.split()
             priceint = price.pop()
             priceint = int("".join(price))
-            terminal = ""
             compname = "Победа"
             leftsit = ""
-            info_to_table(name, time_from, resultfrom, terminal, time_to, plusday, resultto, terminal, compname, priceint,
-                          leftsit, cursor, conn)
+            info_to_table(name, time_from, resultfrom, time_to, plusday, resultto, compname,
+                          priceint, leftsit, cursor, conn)
 
     except Exception as ex:
         traceback.print_exc()

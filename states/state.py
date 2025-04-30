@@ -7,3 +7,5 @@ class User(StatesGroup):
     air_to = State()
     month = State()
     day = State()
+    all_flights = State()
+    year = State()
