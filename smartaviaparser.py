@@ -17,11 +17,11 @@ async def smartavia(resultfrom, resultto, usermonth, userdate, cursor, conn, nam
     driver = webdriver.Chrome(options=options_chrome)
 
     driver.execute_cdp_cmd("Page.addScriptToEvaluateOnNewDocument", {
-        'source': '''
-            delete window.cdc_adoQpoasnfa76pfcZLmcfl_Array;
-            delete window.cdc_adoQpoasnfa76pfcZLmcfl_Promise;
-            delete window.cdc_adoQpoasnfa76pfcZLmcfl_Symbol;
-      '''
+            'source': '''
+                delete window.cdc_adoQpoasnfa76pfcZLmcfl_Array;
+                delete window.cdc_adoQpoasnfa76pfcZLmcfl_Promise;
+                delete window.cdc_adoQpoasnfa76pfcZLmcfl_Symbol;
+          '''
     })
     try:
         url = f"https://flysmartavia.com/search/{resultfrom}-{userdate}{month_to_number[usermonth]}-{resultto}-1"
@@ -69,3 +69,4 @@ async def smartavia(resultfrom, resultto, usermonth, userdate, cursor, conn, nam
 
     finally:
         driver.quit()  # Закрываем браузер
+

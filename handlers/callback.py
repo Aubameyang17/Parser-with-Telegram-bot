@@ -1,7 +1,7 @@
 from aiogram import types, Dispatcher, F, Bot
 from aiogram.fsm.context import FSMContext
 
-from handlers.message import show_page, get_popular_cities_to, get_db_cursor
+from handlers.message import show_page, get_popular_cities_to, cursor
 from keyboards.keyboards import user_menu, create_city_keyboard
 from states.state import User
 
@@ -38,41 +38,30 @@ async def paginate_callback(callback: types.CallbackQuery, state: FSMContext):
 
 
 async def select_city_from(callback: types.CallbackQuery, state: FSMContext):
-    conn, cursor = get_db_cursor()
-    try:
-        city = callback.data.split("_", 2)[2]
-        cursor.execute(f"SELECT code FROM aero WHERE city LIKE '{city}';")
-        resultfrom = cursor.fetchall()
-        resultfrom = resultfrom[0][0]
-        newres = resultfrom.split(",")
-        resultfrom = newres[0]
-        await state.update_data(city_from=city)
-        await state.update_data(air_from=resultfrom)
-        popular_citys = get_popular_cities_to(cursor)
-        keyboard = create_city_keyboard(popular_citys, direction="to")
-        await callback.message.answer("🛬 Введите город в который хотите полететь", reply_markup=keyboard)
-        await state.set_state(User.air_to.state)
-    finally:
-        cursor.close()
-        conn.close()
+    city = callback.data.split("_", 2)[2]
+    cursor.execute(f"SELECT code FROM aero WHERE city LIKE '{city}';")
+    resultfrom = cursor.fetchall()
+    resultfrom = resultfrom[0][0]
+    newres = resultfrom.split(",")
+    resultfrom = newres[0]
+    await state.update_data(city_from=city)
+    await state.update_data(air_from=resultfrom)
+    popular_citys = await get_popular_cities_to()
+    keyboard = create_city_keyboard(popular_citys, direction="to")
+    await callback.message.answer("🛬 Введите город в который хотите полететь", reply_markup=keyboard)
+    await state.set_state(User.air_to.state)
 
 async def select_city_to(callback: types.CallbackQuery, state: FSMContext):
-    conn, cursor = get_db_cursor()
-    try:
-        city = callback.data.split("_", 2)[2]
-        cursor.execute(f"SELECT code FROM aero WHERE city LIKE '{city}';")
-        resultto = cursor.fetchall()
-        resultto = resultto[0][0]
-        newres = resultto.split(",")
-        resultto = newres[0]
-        await state.update_data(city_to=city)
-        await state.update_data(air_to=resultto)
-        await callback.message.answer("📅 Выберите месяц для перелета")
-        await state.set_state(User.month.state)
-    finally:
-        cursor.close()
-        conn.close()
-
+    city = callback.data.split("_", 2)[2]
+    cursor.execute(f"SELECT code FROM aero WHERE city LIKE '{city}';")
+    resultto = cursor.fetchall()
+    resultto = resultto[0][0]
+    newres = resultto.split(",")
+    resultto = newres[0]
+    await state.update_data(city_to=city)
+    await state.update_data(air_to=resultto)
+    await callback.message.answer("📅 Выберите месяц для перелета")
+    await state.set_state(User.month.state)
 
 
 def register_callbacks(dp: Dispatcher):

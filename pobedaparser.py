@@ -55,7 +55,7 @@ async def pobeda(resultfrom, resultto, usermonth, userdate, cursor, conn, name, 
             compname = "Победа"
             leftsit = ""
             info_to_table(name, time_from, resultfrom, time_to, plusday, resultto, compname,
-                          priceint, leftsit, cursor, conn)
+                              priceint, leftsit, cursor, conn)
 
     except Exception as ex:
         traceback.print_exc()

@@ -44,11 +44,11 @@ async def uralair(resultfrom, resultto, usermonth, userdate, cursor, conn, name,
     driver = webdriver.Chrome(options=options_chrome)
 
     driver.execute_cdp_cmd("Page.addScriptToEvaluateOnNewDocument", {
-        'source': '''
-            delete window.cdc_adoQpoasnfa76pfcZLmcfl_Array;
-            delete window.cdc_adoQpoasnfa76pfcZLmcfl_Promise;
-            delete window.cdc_adoQpoasnfa76pfcZLmcfl_Symbol;
-      '''
+            'source': '''
+                delete window.cdc_adoQpoasnfa76pfcZLmcfl_Array;
+                delete window.cdc_adoQpoasnfa76pfcZLmcfl_Promise;
+                delete window.cdc_adoQpoasnfa76pfcZLmcfl_Symbol;
+          '''
     })
     try:
         url = generate_ural_url(
@@ -68,10 +68,8 @@ async def uralair(resultfrom, resultto, usermonth, userdate, cursor, conn, name,
             route = flight.find_elements(By.CLASS_NAME, "airport-code")
             air_city = route[0].text
             air_from = air_city.split()[-1]
-
-
             air_to_city = route[1].text
-            air_to = air_to_city.split()[1]
+            air_to = air_to_city.split()[-1]
 
             times = flight.find_elements(By.CLASS_NAME, "time")
             time_from = times[0].text
@@ -85,7 +83,7 @@ async def uralair(resultfrom, resultto, usermonth, userdate, cursor, conn, name,
             plusday = ''
             leftsit = ''
             compname = "Уральские Авиалинии"
-            info_to_table(name, time_from, air_from, time_to, plusday, air_to, compname, price, leftsit, cursor, conn)
+            info_to_table(name, time_from, air_from, time_to, plusday, air_to, compname, price, leftsit,  cursor, conn)
 
     except Exception as ex:
         traceback.print_exc()

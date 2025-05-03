@@ -12,6 +12,8 @@ from handlers.message import register_message
 
 logger = logging.getLogger(__name__)
 
+
+
 async def main() -> None:
     logging.basicConfig(
         level=logging.INFO,

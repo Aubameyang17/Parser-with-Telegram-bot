@@ -1,6 +1,3 @@
-import asyncio
-import time
-import psycopg2
 import datetime
 import traceback
 from selenium import webdriver
@@ -8,7 +5,7 @@ from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 
-from sql_file import create_table, info_to_table, take_orders
+from sql_file import info_to_table
 
 month = datetime.date.today().month
 
@@ -89,6 +86,5 @@ async def osnovnoe(resultfrom, resultto, usermonth, userdate, cursor, conn, name
 
     finally:
         driver.quit()  # Закрываем браузер
-
 
 
