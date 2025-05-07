@@ -7,8 +7,7 @@ import json
 import urllib.parse
 from datetime import date
 
-from sql_file import info_to_table
-
+from sql_file import info_to_table, take_statistics
 
 month_to_number = {'январь': "01", 'февраль': "02", 'март': "03", 'апрель': "04", 'май': "05", 'июнь': "06",
                    'июль': "07", 'август': "08", 'сентябрь': "09", 'октябрь': "10", 'ноябрь': "11", 'декабрь': "12"}
@@ -42,6 +41,7 @@ async def uralair(resultfrom, resultto, usermonth, userdate, cursor, conn, name,
     #options_chrome.add_argument('--no-sandbox')
     options_chrome.add_argument("--disable-blink-features=AutomationControlled")
     driver = webdriver.Chrome(options=options_chrome)
+    driver.set_window_position(2000, 0)
 
     driver.execute_cdp_cmd("Page.addScriptToEvaluateOnNewDocument", {
             'source': '''
@@ -83,7 +83,11 @@ async def uralair(resultfrom, resultto, usermonth, userdate, cursor, conn, name,
             plusday = ''
             leftsit = ''
             compname = "Уральские Авиалинии"
-            info_to_table(name, time_from, air_from, time_to, plusday, air_to, compname, price, leftsit,  cursor, conn)
+            #info_to_table(name, time_from, air_from, time_to, plusday, air_to, compname, price, leftsit,  cursor, conn)
+            if len(str(userdate)) == 1:
+                userdate = "0" + str(userdate)
+            fly_date = str(year) + month_to_number[usermonth] + str(userdate)
+            take_statistics(resultfrom, resultto, fly_date, price, time_from, time_to, compname, cursor, conn)
 
     except Exception as ex:
         traceback.print_exc()

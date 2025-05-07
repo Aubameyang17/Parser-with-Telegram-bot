@@ -5,7 +5,7 @@ from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 
-from sql_file import info_to_table
+from sql_file import info_to_table, take_statistics
 
 month = datetime.date.today().month
 
@@ -18,6 +18,7 @@ async def osnovnoe(resultfrom, resultto, usermonth, userdate, cursor, conn, name
     #options_chrome.add_argument("--headless")
     #options_chrome.add_argument('--no-sandbox')
     driver = webdriver.Chrome(options=options_chrome)
+    driver.set_window_position(2000, 0)
 
     try:
         url = f'https://www.aeroflot.ru/sb/app/ru-ru?utm_referrer=https%3A%2F%2Fwww.aeroflot.ru%2Fru-ru#/search?adults=1&cabin=economy&children=0&childrenaward=0&childrenfrgn=0&infants=0&routes={resultfrom}.{year}{month_to_number[usermonth]}{userdate}.{resultto}&_k=jc07st'
@@ -75,6 +76,10 @@ async def osnovnoe(resultfrom, resultto, usermonth, userdate, cursor, conn, name
                     #traceback.print_exc()
                     plusday = ""
                 info_to_table(name, time_from, airfrom, timeto, plusday, airto, compname, price, leftsit, cursor, conn)
+                if len(str(userdate)) == 1:
+                    userdate = "0" + str(userdate)
+                fly_date = str(year) + month_to_number[usermonth] + str(userdate)
+                take_statistics(resultfrom, resultto, fly_date, price, time_from, timeto, compname, cursor, conn)
             except Exception as ex:
                 continue
                 #traceback.print_exc()

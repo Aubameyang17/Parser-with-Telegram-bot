@@ -1,3 +1,6 @@
+import psycopg2
+
+
 def info_to_table(name, time_from, airfrom, timeto, plusday, airto, compname, price, leftsit, cursor, conn):
     parametrs = (time_from, airfrom, timeto, plusday, airto, compname, price, leftsit)
     cursor.execute('INSERT INTO ' + name + ' (time_from, airfrom, time_to, plusday, airto, name, price, left_sit) '
@@ -30,3 +33,10 @@ def create_table(userid, cursor, conn):
 
     conn.commit()
     return name
+
+def take_statistics(airfrom, airto, fly_date, price, time_from, timeto, compname, cursor, conn):
+
+    cursor.execute("INSERT INTO all_flyghts (city_from, city_to, fly_date, price, time_from, time_to, company) "
+                   "VALUES (%s, %s, %s, %s, %s, %s, %s)"
+                   "ON CONFLICT DO NOTHING;", (airfrom, airto, fly_date, price, time_from, timeto, compname))
+    conn.commit()

@@ -1,12 +1,10 @@
-import asyncio
-
 from selenium import webdriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.ui import WebDriverWait
 import datetime
 import traceback
-from sql_file import info_to_table
+from sql_file import info_to_table, take_statistics
 
 month = datetime.date.today().month
 
@@ -18,6 +16,7 @@ async def pobeda(resultfrom, resultto, usermonth, userdate, cursor, conn, name, 
     #options_chrome.add_argument("--headless")
     #options_chrome.add_argument('--no-sandbox')
     driverpobeda = webdriver.Chrome(options=options_chrome)
+    driverpobeda.set_window_position(2000, 0)
 
     try:
         url = f"https://ticket.flypobeda.ru/websky/?origin-city-code%5B0%5D={resultfrom}&destination-city-code%5B0%5D={resultto}&date%5B0%5D={userdate}.{month_to_number[usermonth]}.{year}&segmentsCount=1&adultsCount=1&youngAdultsCount=0&childrenCount=0&infantsWithSeatCount=0&infantsWithoutSeatCount=0&lang=ru#/search"
@@ -54,8 +53,12 @@ async def pobeda(resultfrom, resultto, usermonth, userdate, cursor, conn, name, 
             priceint = int("".join(price))
             compname = "Победа"
             leftsit = ""
-            info_to_table(name, time_from, resultfrom, time_to, plusday, resultto, compname,
-                              priceint, leftsit, cursor, conn)
+            info_to_table(name, time_from, resultfrom, time_to, plusday, resultto, compname, priceint, leftsit, cursor, conn)
+            if len(str(userdate)) == 1:
+                userdate = "0" + str(userdate)
+            fly_date = str(year) + month_to_number[usermonth] + str(userdate)
+            take_statistics(resultfrom, resultto, fly_date, priceint, time_from, time_to, compname, cursor, conn)
+
 
     except Exception as ex:
         traceback.print_exc()
