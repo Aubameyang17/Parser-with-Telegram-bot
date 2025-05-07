@@ -8,7 +8,6 @@ import asyncio
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
-import plotly.express as px
 import datetime
 import psycopg2
 from aiogram.fsm.context import FSMContext
@@ -72,8 +71,9 @@ async def show_fake_loading(message, status=True):
         "🔎 Ищем билеты.",
         "🔎 Ищем билеты..",
         "🔎 Ищем билеты...",
+        "🔎 Ищем билеты"
     ]
-    loading_msg = await message.answer("🔎 Ищем билеты.")
+    loading_msg = await message.answer("🔎 Ищем билеты")
     try:
         while status:
             for text in loading_phrases:
@@ -95,6 +95,9 @@ async def add_user(user_id: int, username: str):
         )
         conn.commit()
 
+
+def run_async_in_thread(coro):
+    return asyncio.run(coro)
 
 
 
@@ -195,15 +198,27 @@ async def vivod_handler(message: types.Message, state: FSMContext, bot: Bot):
     await message.answer(
         f"Отлично, сейчас посмотрим какие есть предложения по билетам из {user_data['city_from']} в "
         f"{user_data['city_to']} {userdate} {user_data['month']} {newyear}г. 🕒")
-    await show_fake_loading(message)
     create_table(str(message.from_user.id), cursor, conn)
     userid = message.from_user.id
     name = '"' + str(userid) + "flyghts" + '"'
+    loading_task = asyncio.create_task(show_fake_loading(message))
+
     try:
-        resultt = await run_all_parsers_parallel(user_data['air_from'], user_data['air_to'],
-                                                 user_data['month'], userdate, cursor, conn, name, newyear)
+        resultt = await asyncio.to_thread(
+            run_async_in_thread,
+            run_all_parsers_parallel(
+                user_data['air_from'],
+                user_data['air_to'],
+                user_data['month'],
+                userdate,
+                cursor,
+                conn,
+                name,
+                newyear
+            )
+        )
     finally:
-        await show_fake_loading(message, False)
+        loading_task.cancel()
     cursor.execute('SELECT * FROM ' + name + ' ORDER BY price asc')
     result = cursor.fetchall()
     if result:
