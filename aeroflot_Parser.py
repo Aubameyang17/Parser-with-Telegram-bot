@@ -15,8 +15,6 @@ month_to_number = {'январь': "01", 'февраль': "02", 'март': "03
 
 async def osnovnoe(resultfrom, resultto, usermonth, userdate, cursor, conn, name, year):
     options_chrome = webdriver.ChromeOptions()
-    #options_chrome.add_argument("--headless")
-    #options_chrome.add_argument('--no-sandbox')
     driver = webdriver.Chrome(options=options_chrome)
     driver.set_window_position(2000, 0)
 

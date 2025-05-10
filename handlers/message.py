@@ -108,7 +108,20 @@ async def start_command(message: types.Message):
     ])
     await message.answer(f'Добрый день, {message.from_user.full_name} 😉\n'
                          f'Рад вас видеть, напишите /air, чтобы начать искать билеты '
-                         f'или /repeat чтобы повторить предыдущий запрос', reply_markup=kb)
+                         f'или /repeat чтобы повторить предыдущий запрос, вы также можете написать команду '
+                         f'/help которая расскажет о других доступных командах', reply_markup=kb)
+
+async def help_command(message: types.Message):
+    await message.answer(f'Добрый день, {message.from_user.full_name} 😌\n'
+                         f'Сейчас я расскажу какие команды доступны в этой версии бота:\n'
+                         f'/start - начальная команда которая вас поприветсвует\n'
+                         f'/air - эта команда позволит вам сделать запрос на просмотр билетов\n'
+                         f'/repeat - с помощью этой команды вы сможите повторить ваш предыдущий запрос\n'
+                         f'/stats - эта команда вас познвкомит с правилами вывода статистики\n'
+                         f'/stats_per_company - эта команда позволит вам увидеть '
+                         f'сравнение цен по компаниям на определенное направление\n'
+                         f'/stats_per_day - эта команда покажет статистику изменения '
+                         f'цен по дням на определенное направление')
 
 async def air_from_handler(message: types.Message, state: FSMContext):
     popular_citys = await get_popular_cities_from()
@@ -580,6 +593,7 @@ async def plot_company_comparison(message_or_callback, city_from, city_to, umont
 
 def register_message(dp: Dispatcher):
     dp.message.register(start_command, CommandStart())
+    dp.message.register(help_command, Command('help'))
     dp.message.register(air_from_handler, Command("air"))
     dp.message.register(air_to_handler, User.air_from)
     dp.message.register(month_handler, User.air_to)
